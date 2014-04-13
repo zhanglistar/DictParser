@@ -1,0 +1,53 @@
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict
+END
+int_array.dict
+K 25
+svn:wc:ra_dav:version-url
+V 83
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/int_array.dict
+END
+first_line_empty.dict
+K 25
+svn:wc:ra_dav:version-url
+V 90
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/first_line_empty.dict
+END
+array.dict
+K 25
+svn:wc:ra_dav:version-url
+V 79
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/array.dict
+END
+int_float_double_string.dict
+K 25
+svn:wc:ra_dav:version-url
+V 97
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/int_float_double_string.dict
+END
+emptydict
+K 25
+svn:wc:ra_dav:version-url
+V 78
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/emptydict
+END
+second_line_toolong.dict
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/second_line_toolong.dict
+END
+user_define_handler.dict
+K 25
+svn:wc:ra_dav:version-url
+V 93
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/user_define_handler.dict
+END
+loadall_array.dict
+K 25
+svn:wc:ra_dav:version-url
+V 87
+/myspace/!svn/ver/107893/ps/private/zhangzhibiao01/src/unittest/dict/loadall_array.dict
+END
