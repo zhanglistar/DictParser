@@ -8,8 +8,8 @@ INCPATH= -I$(BTEST_DIR)/gtest/output/include \
 DEP_LDFLAGS= -L$(BTEST_DIR)/gtest/output/lib \
 			 -L../output/
 
-DEP_LDLIBS= -lgtest -lgtest_main -ldict_parser -lpthread
-#DEP_LDLIBS= /usr/lib/libgtest.a /usr/lib/libgtest_main.a -ldict_parser -lpthread
+#DEP_LDLIBS= -lgtest -lgtest_main -ldict_parser -lpthread
+DEP_LDLIBS= /usr/lib/libgtest.a /usr/lib/libgtest_main.a -ldict_parser -lpthread
 
 CXX=g++
 

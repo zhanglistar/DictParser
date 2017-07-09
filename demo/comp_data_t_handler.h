@@ -1,8 +1,21 @@
+/***************************************************************************
+ *
+ * Copyright (c) 2017 Baidu.com, Inc. All Rights Reserved
+ *
+ **************************************************************************/
 
-#ifndef __CODE_MASTER_COMP_DATA_T_HANDLER_H__
-#define __CODE_MASTER_COMP_DATA_T_HANDLER_H__
+/**
+ * @file comp_data_t_handler.h
+ * @author chenming05(com@baidu.com)
+ * @date 2017/06/21 14:33:48
+ * @brief
+ *
+ **/
 
-#include "parser.h"
+#ifndef GOODCODER_CHENMING05_DEMO_COMP_DATA_T_HANDLER_H
+#define GOODCODER_CHENMING05_DEMO_COMP_DATA_T_HANDLER_H
+
+#include "dict_parser.h"
 
 // user define type
 struct comp_data_t
@@ -13,7 +26,7 @@ struct comp_data_t
 };
 
 // user define type handler
-ERR_CODE comp_data_t_handler(void *dest, int , const void *src, int );
+ERR_CODE comp_data_t_handler(void *dest, int *dest_size, const void *src, int src_len);
 
 #endif
 

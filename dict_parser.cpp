@@ -1,21 +1,18 @@
-/*
- * =====================================================================================
+/***************************************************************************
  *
- *       Filename:  parser.cpp
+ * Copyright (c) 2017 Baidu.com, Inc. All Rights Reserved
  *
- *    Description:  data parser implementation
+ **************************************************************************/
+
+/**
+ * @file dict_parser.cpp
+ * @author chenming05(com@baidu.com)
+ * @date 2017/06/21 14:33:48
+ * @brief
  *
- *        Version:  1.0
- *        Created:  2014年01月08日 20时21分19秒
- *       Revision:  none
- *       Compiler:  g++
- *
- *         Author:  zhangzhibiao01@
- *   Organization:  Baidu, Inc.
- *
- * =====================================================================================
- */
-#include "parser.h"
+ **/
+
+#include "dict_parser.h"
 #include <stdarg.h>
 #include <errno.h>
 #include "builtin_handler.h"
@@ -25,12 +22,10 @@ type_handler_t g_builtin_type_handler_array[] = {
     { "int", int_handler },
     { "float", float_handler },
     { "string", string_handler },
-    { "double", double_handler },
     // builtin type array
     { "intarray", int_array_handler },
     { "floatarray", float_array_handler },
     { "stringarray", string_array_handler },
-    { "doublearray", double_array_handler },
     { NULL, NULL },
 };
 
@@ -38,7 +33,7 @@ const std::string g_null_str("");
 
 int trim(char *buffer, int &len);
 
-ERR_CODE Parser::parse_data_line_by_line(int cnt, ...)
+ERR_CODE DictParser::parse_data_line_by_line(int cnt, ...)
 {
     // check parameters
     if (cnt > (int)_type_array.size())
@@ -62,14 +57,14 @@ ERR_CODE Parser::parse_data_line_by_line(int cnt, ...)
     return ret;
 }
 
-ERR_CODE Parser::parse_data_line_by_line(int cnt,
-                                         const char *type,
-                                         void *data_ptr,
-                                         int sz, 
-                                         ...)
+ERR_CODE DictParser::parse_data_line_by_line(int cnt,
+                                        const char *type,
+                                        void *data_ptr,
+                                        int *sz,
+                                        ...)
 {
     // check parameters
-    if (!type || !data_ptr || sz <= 0)
+    if (!type || !data_ptr || *sz <= 0)
     {
         return PARAM_ERROR;
     }
@@ -89,12 +84,12 @@ ERR_CODE Parser::parse_data_line_by_line(int cnt,
     return ret;
 }
 
-inline bool Parser::_check_handler_exists(const std::string &type)
+inline bool DictParser::_check_handler_exists(const std::string &type)
 {
     return (_type_handler_map.find(type) != _type_handler_map.end());
 }
 
-ERR_CODE Parser::set_format(std::string fmt, const char *sep)
+ERR_CODE DictParser::set_format(std::string fmt, const char *sep)
 {
     if (fmt.length() <= 0 ||
         sep == NULL)
@@ -106,7 +101,7 @@ ERR_CODE Parser::set_format(std::string fmt, const char *sep)
     char *str2 = NULL;
     _format = fmt;
     int buf_size = fmt.length();
-    char *buffer = (char *) malloc(buf_size+1);
+    char *buffer = new char[buf_size+1];
     if (buffer == NULL)
     {
         return RET_WRONG;
@@ -120,23 +115,20 @@ ERR_CODE Parser::set_format(std::string fmt, const char *sep)
         if (!_check_handler_exists(str1))
         {
             ERRLOG("type[%s] handler not register", str1);
-            goto _ERR_OUT;
+            SAFE_DELETE_ARRAY(buffer);
+            return RET_WRONG;
         }
         _type_array.push_back(str1);
         str1 = strtok_r(NULL, sep, &str2);
     }
 
-    free(buffer);
+    SAFE_DELETE_ARRAY(buffer);
     return RET_RIGHT;
-
-_ERR_OUT:
-    free(buffer);
-    return RET_WRONG;
 }
 
-ERR_CODE Parser::register_handler(std::string type_name, parse_func_t handler)
+ERR_CODE DictParser::register_handler(std::string type_name, parse_func_t handler)
 {
-    if (type_name.length() <=0 ||
+    if (type_name.length() <= 0 ||
         handler == NULL)
     {
         return RET_WRONG;
@@ -147,9 +139,9 @@ ERR_CODE Parser::register_handler(std::string type_name, parse_func_t handler)
     return RET_RIGHT;
 }
 
-ERR_CODE Parser::init()
+ERR_CODE DictParser::init()
 {
-    if (_filename.length() <=0)
+    if (_filename.length() <= 0)
     {
         ERRLOG("filename empty!");
         return RET_WRONG;
@@ -161,7 +153,7 @@ ERR_CODE Parser::init()
         return RET_WRONG;
     }
 
-    _buffer = (char *) malloc(_buf_size);
+    _buffer = new char[_buf_size];
     if (!_buffer)
     {
         ERRLOG("no memory!");
@@ -177,7 +169,7 @@ ERR_CODE Parser::init()
     return RET_RIGHT;
 }
 
-int Parser::_register_builtin_handlers()
+int DictParser::_register_builtin_handlers()
 {
     int ret = RET_RIGHT;
     type_handler_t *p = g_builtin_type_handler_array;
@@ -186,11 +178,11 @@ int Parser::_register_builtin_handlers()
         ret |= (int)register_handler(p->name, p->handler);
         ++p;
     }
-    
+
     return ret;
 }
 
-inline parse_func_t Parser::_get_handler(const std::string &type)
+inline parse_func_t DictParser::_get_handler(const std::string &type)
 {
     if (_type_handler_map.find(type) == _type_handler_map.end())
     {
@@ -200,7 +192,7 @@ inline parse_func_t Parser::_get_handler(const std::string &type)
     return _type_handler_map[type];
 }
 
-int Parser::load_all()
+int DictParser::load_all()
 {
     // seek to beginning
     int ret = fseek(_fd, 0L, SEEK_SET);
@@ -224,7 +216,7 @@ int Parser::load_all()
             continue;
         }
         // store line content
-        char *line = (char *) malloc(len + 2 + sizeof(int));
+        char *line = new char[len + 2 + sizeof(int)];
         if (!line)
         {
             ERRLOG("no memory");
@@ -239,17 +231,17 @@ int Parser::load_all()
     return _linenum;
 }
 
-inline bool Parser::_is_line_valid(int line)
+inline bool DictParser::_is_line_valid(int line)
 {
     return _err_map.find(line) == _err_map.end();
 }
 
-inline ERR_CODE Parser::_get_line_error(int line)
+inline ERR_CODE DictParser::_get_line_error(int line)
 {
     return (ERR_CODE) _err_map[line];
 }
 
-ERR_CODE Parser::parse_data_by_line(int linenum, int cnt, ...)
+ERR_CODE DictParser::parse_data_by_line(int linenum, int cnt, ...)
 {
     if (linenum > _linenum)
     {
@@ -278,15 +270,15 @@ ERR_CODE Parser::parse_data_by_line(int linenum, int cnt, ...)
     va_start(vl, cnt);
     ERR_CODE ret = _parse_data_internal2(len, linenum, cnt, vl);
     va_end(vl);
-    
+
     return ret;
 }
 
-ERR_CODE Parser::parse_data_by_line(int linenum, 
-                                    int cnt, 
+ERR_CODE DictParser::parse_data_by_line(int linenum,
+                                    int cnt,
                                     const char *type,
-                                    void *data_ptr, 
-                                    int sz, 
+                                    void *data_ptr,
+                                    int *sz,
                                     ...)
 {
     if (!_is_line_valid(linenum))
@@ -306,11 +298,11 @@ ERR_CODE Parser::parse_data_by_line(int linenum,
     va_start(vl, sz);
     ERR_CODE ret = _parse_data_internal3(len, linenum, cnt, type, data_ptr, sz, vl);
     va_end(vl);
-    
+
     return ret;
 }
 
-ERR_CODE Parser::_read_one_line(int &len)
+ERR_CODE DictParser::_read_one_line(int &len)
 {
     char *read_buf = fgets(_buffer, _buf_size, _fd);
     // error
@@ -326,7 +318,7 @@ ERR_CODE Parser::_read_one_line(int &len)
             return RET_WRONG;
         }
     }
-    ++ _linenum;
+    ++_linenum;
     // empty line
     if (_buffer[0] == '\n' || _buffer[0] == '\r')
     {
@@ -351,16 +343,16 @@ ERR_CODE Parser::_read_one_line(int &len)
     }
     // trim \n
     trim(_buffer, len);
-    
+
     return RET_RIGHT;
 }
 
-ERR_CODE Parser::_parse_data_internal3(int len, 
-                                       int linenum, 
-                                       int num, 
-                                       const char *type, 
+ERR_CODE DictParser::_parse_data_internal3(int len,
+                                       int linenum,
+                                       int num,
+                                       const char *type,
                                        void *data_ptr,
-                                       int sz,
+                                       int *sz,
                                        va_list vl)
 {
     (void) len;
@@ -369,32 +361,33 @@ ERR_CODE Parser::_parse_data_internal3(int len,
     char *str2 = NULL;
     str1 = strtok_r(_buffer, seprator, &str2);
     int i = 0;
+    ERR_CODE ret;
     for (; i < num && str1; i++)
     {
         if (i == 0)
         {
             parse_func_t handle = _get_handler(type);
-            if (!handle || (*handle)(data_ptr, sz, str1, strlen(str1)+1) != RET_RIGHT)
+            if (!handle || (ret = (*handle)(data_ptr, sz, str1, strlen(str1)+1)) != RET_RIGHT)
             {
                 ERRLOG("handle type[%s] failed, line[%d]", type, _linenum);
-                return RET_WRONG;
+                return ret;
             }
         }
         else
         {
             const char *type_temp = va_arg(vl, char *);
             void *dest_ptr = va_arg(vl, void *);
-            int dest_len = va_arg(vl, int);
+            int *dest_len = va_arg(vl, int *);
             if (!type_temp || !dest_ptr)
             {
                 ERRLOG("parametor illegal!");
                 return RET_WRONG;
             }
             parse_func_t handle = _get_handler(type_temp);
-            if (!handle || (*handle)(dest_ptr, dest_len, str1, strlen(str1)+1) != RET_RIGHT)
+            if (!handle || (ret = (*handle)(dest_ptr, dest_len, str1, strlen(str1)+1)) != RET_RIGHT)
             {
                 ERRLOG("handle type[%s] failed, line[%d]", type_temp, _linenum);
-                return RET_WRONG;
+                return ret;
             }
         }
 
@@ -410,7 +403,7 @@ ERR_CODE Parser::_parse_data_internal3(int len,
     return RET_RIGHT;
 }
 
-ERR_CODE Parser::_parse_data_internal2(int len, int linenum, int num, va_list vl)
+ERR_CODE DictParser::_parse_data_internal2(int len, int linenum, int num, va_list vl)
 {
     (void) len;
     char *str1 = NULL;
@@ -419,15 +412,17 @@ ERR_CODE Parser::_parse_data_internal2(int len, int linenum, int num, va_list vl
     std::vector<std::string>::const_iterator it = _type_array.begin();
     str1 = strtok_r(_buffer, _seprator.c_str(), &str2);
     int i = 0;
-    for (; i < num && str1 ; ++i, ++it)
+    ERR_CODE ret;
+    for (; i < num && str1; ++i, ++it)
     {
         void *data_ptr = va_arg(vl, void *);
-        int data_len = va_arg(vl, int);
+        int *data_len = va_arg(vl, int *);
         parse_func_t handle = _get_handler(*it);
-        if (!handle || (*handle)(data_ptr, data_len, str1, strlen(str1)+1) != RET_RIGHT)
+
+        if (!handle || (ret = (*handle)(data_ptr, data_len, str1, strlen(str1)+1)) != RET_RIGHT)
         {
             ERRLOG("parser type[%s] failed! Line[%d]", it->c_str(), linenum);
-            return RET_WRONG;
+            return ret;
         }
 
         str1 = strtok_r(NULL, seprator, &str2);
