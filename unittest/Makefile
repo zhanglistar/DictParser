@@ -1,11 +1,4 @@
-# Description: unittest Makefile
-#
-# Copyright (c) 2008 by Baidu.com, Incorporation, P.R.C
-# All rights reserved.
-# Author: zhangzhibiao01@baidu.com
-#
-
-BTEST_DIR=../../btest/
+BTEST_DIR=../../../btest
 
 CXXFLAGS=-g -O0
 
@@ -15,7 +8,8 @@ INCPATH= -I$(BTEST_DIR)/gtest/output/include \
 DEP_LDFLAGS= -L$(BTEST_DIR)/gtest/output/lib \
 			 -L../output/
 
-DEP_LDLIBS= -lgtest -lgtest_main -lparser -lpthread
+DEP_LDLIBS= -lgtest -lgtest_main -ldict_parser -lpthread
+#DEP_LDLIBS= /usr/lib/libgtest.a /usr/lib/libgtest_main.a -ldict_parser -lpthread
 
 CXX=g++
 

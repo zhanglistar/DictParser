@@ -3,11 +3,9 @@
 #include "builtin_handler.h"
 #include <stdlib.h>
 
-#define CHECK_PARAM(p, q) if (p) { ERRLOG(q); return PARAM_ERROR; }
-
-ERR_CODE int_handler(void *dest, int dest_len, const void *src, int src_len)
+ERR_CODE int_handler(void *dest, int *dest_size, const void *src, int src_len)
 {
-    CHECK_PARAM((!dest || !src || dest_len < (int)sizeof(int) || src_len <= 0), 
+    CHECK_PARAM((!dest || !src || *dest_size < (int)sizeof(int) || src_len <= 0),
                 "param error!");
 
     char *pend = NULL;
@@ -24,11 +22,11 @@ ERR_CODE int_handler(void *dest, int dest_len, const void *src, int src_len)
     }
 }
 
-ERR_CODE float_handler(void *dest, int dest_len, const void *src, int src_len)
+ERR_CODE float_handler(void *dest, int *dest_size, const void *src, int src_len)
 {
-    CHECK_PARAM((!dest || !src || dest_len < (int)sizeof(float) || src_len <= 0), 
+    CHECK_PARAM((!dest || !src || *dest_size < (int)sizeof(float) || src_len <= 0),
                 "param error!");
-    
+
     char *pend = NULL;
     *(float *)dest = strtof((const char *)src, &pend);
 
@@ -42,46 +40,43 @@ ERR_CODE float_handler(void *dest, int dest_len, const void *src, int src_len)
     }
 }
 
-ERR_CODE double_handler(void *dest, int dest_len, const void *src, int src_len)
+ERR_CODE string_handler(void *dest, int *dest_size, const void *src, int src_len)
 {
-    CHECK_PARAM((!dest || !src || dest_len < (int)sizeof(double) || src_len <= 0), 
-                "param error!");
-    
-    char *pend = NULL;
-    *(double *)dest = strtod((char *)src, &pend);
+    CHECK_PARAM((!dest || !src || *dest_size < (int)sizeof(char)), "param error!");
 
-    if (((char *)src)[0] != '\0' && *pend == '\0')
+    if (*dest_size < src_len)
     {
-        return RET_RIGHT;
+        ERRLOG("string too long[%d/%d]!", src_len, *dest_size);
+        return LINE_TOO_LONG;
     }
-    else
-    {
-        return RET_WRONG;
-    }
-}
-
-ERR_CODE string_handler(void *dest, int dest_len, const void *src, int src_len)
-{
-    CHECK_PARAM((!dest || !src || dest_len < src_len), "param error!");
-    
     memcpy(dest, src, src_len);
     return RET_RIGHT;
 }
 
-ERR_CODE int_array_handler(void *dest, int dest_len, const void *src, int src_len)
+ERR_CODE int_array_handler(void *dest, int *dest_size, const void *src, int src_len)
 {
-    CHECK_PARAM((!dest || !src || dest_len < (int)sizeof(int) || src_len <= 0), 
+    CHECK_PARAM((!dest || !src || *dest_size < (int)sizeof(int) || src_len <= 0),
                 "param error!");
-    
+
     int *pint = (int *)dest;
+    int num = -1;
+    int i = 0;
     char *str1 = NULL;
     char *str2 = NULL;
-    char *pstr = (char *) src;
-    str1 = strtok_r(pstr, ",", &str2);
+    char *pstr = (char *)src;
+    str1 = strtok_r(pstr, ":", &str2);
     while (str1)
     {
         char *pend = NULL;
-        *pint = (int)strtol((char *)str1, &pend, 10);
+        if (num == -1)
+        {
+            num = (int)strtol((char *)str1, &pend, 10);
+        }
+        else
+        {
+            *(pint + i) = (int)strtol((char *)str1, &pend, 10);
+            ++i;
+        }
 
         if (((char *)src)[0] != '\0' && *pend == '\0')
         {
@@ -92,8 +87,7 @@ ERR_CODE int_array_handler(void *dest, int dest_len, const void *src, int src_le
             ERRLOG("format error!");
             return RET_WRONG;
         }
-        ++pint;
-        if (pint >= (int *)dest + sizeof(int) * dest_len)
+        if (i >= (*dest_size) / (int)sizeof(int))
         {
             ERRLOG("buffer not enough");
             return RET_WRONG;
@@ -102,23 +96,44 @@ ERR_CODE int_array_handler(void *dest, int dest_len, const void *src, int src_le
         str1 = strtok_r(NULL, ",", &str2);
     }
 
-    return RET_RIGHT;
+    if (num >= 0 && num == i)
+    {
+        *dest_size = num * (int)sizeof(int);
+        return RET_RIGHT;
+    }
+    else
+    {
+        ERRLOG("format error!");
+        return RET_WRONG;
+    }
+
 }
 
-ERR_CODE float_array_handler(void *dest, int dest_len, const void *src, int src_len)
+ERR_CODE float_array_handler(void *dest, int *dest_size, const void *src, int src_len)
 {
-    CHECK_PARAM((!dest || !src || dest_len < (int)sizeof(float) || src_len <= 0), 
+    CHECK_PARAM((!dest || !src || *dest_size < (int)sizeof(float) || src_len <= 0),
                 "param error!");
-    
+
     float *pfloat = (float *)dest;
+    int num = -1;
+    int i = 0;
     char *str1 = NULL;
     char *str2 = NULL;
     char *pstr = (char *) src;
-    str1 = strtok_r(pstr, ",", &str2);
+    str1 = strtok_r(pstr, ":", &str2);
     while (str1)
     {
         char *pend = NULL;
-        *pfloat = strtof((char *)src, &pend);
+        if (num == -1)
+        {
+            num = (int)strtol((char *)str1, &pend, 10);
+        }
+        else
+        {
+            *(pfloat + i) = (float)strtof((char *)str1, &pend);
+            ++i;
+        }
+        //*pfloat = strtof((char *)src, &pend);
 
         if (((char *)src)[0] != '\0' && *pend == '\0')
         {
@@ -129,42 +144,64 @@ ERR_CODE float_array_handler(void *dest, int dest_len, const void *src, int src_
             ERRLOG("format error!");
             return RET_WRONG;
         }
-        ++pfloat;
-        if (pfloat >= (float *)dest + sizeof(float) * dest_len)
+        //++pfloat;
+        if (i >= (*dest_size) / (int)sizeof(float))
         {
-            ERRLOG("buffer not enough[%d/%d]", src_len, dest_len);
+            ERRLOG("buffer not enough[%d/%d]", src_len, *dest_size);
             return RET_WRONG;
         }
 
         str1 = strtok_r(NULL, ",", &str2);
     }
 
-    return RET_RIGHT;
+    if (num >= 0 && num == i)
+    {
+        *dest_size = num * (int)sizeof(float);
+        return RET_RIGHT;
+    }
+    else
+    {
+        ERRLOG("format error!");
+        return RET_WRONG;
+    }
 }
 
-ERR_CODE string_array_handler(void *dest, int dest_len, const void *src, int src_len)
+ERR_CODE string_array_handler(void *dest, int *dest_size, const void *src, int src_len)
 {
-    //char *pstr = (char *) dest;
+    CHECK_PARAM((!dest || !src || *dest_size < (int)sizeof(char *) || src_len <= 0),
+                "param error!");
 
-    return RET_RIGHT;
-}
-
-ERR_CODE double_array_handler(void *dest, int dest_len, const void *src, int src_len)
-{
-    CHECK_PARAM((!dest || !src || dest_len < (int)sizeof(double) || src_len <= 0), 
-            "param error!");
-    
-    double *pdouble = (double *)dest;
+    char **pstring = (char **)dest;
+    int num = -1;
+    int i = 0;
     char *str1 = NULL;
     char *str2 = NULL;
-    char *pstr = (char *) src;
-    str1 = strtok_r(pstr, ",", &str2);
+    char *pstr = (char *)src;
+    str1 = strtok_r(pstr, ":", &str2);
     while (str1)
     {
-        char *pend = NULL;
-        *pdouble = strtod((char *)src, &pend);
+        if (num == -1)
+        {
+            char *pend = NULL;
+            num = (int)strtol(str1, &pend, 10);
+            if (*pend != '\0')
+            {
+                ERRLOG("format error!");
+                return RET_WRONG;
+            }
+        }
+        else
+        {
+            if (strlen(str1) + 1 > MAX_STR_LEN)
+            {
+                ERRLOG("string too long[%d/%d]!", (int)strlen(str1) + 1, (int)MAX_STR_LEN);
+                return LINE_TOO_LONG;
+            }
+            memcpy(*(pstring + i), str1, strlen(str1) + 1);
+            ++i;
+        }
 
-        if (((char *)src)[0] != '\0' && *pend == '\0')
+        if (((char *)src)[0] != '\0')
         {
             //return RET_RIGHT;
         }
@@ -173,9 +210,7 @@ ERR_CODE double_array_handler(void *dest, int dest_len, const void *src, int src
             ERRLOG("format error!");
             return RET_WRONG;
         }
-        //*pdouble = atof(str1);
-        ++pdouble;
-        if (pdouble >= (double *)dest + sizeof(double) * dest_len)
+        if (i >= (*dest_size) / (int)sizeof(char *))
         {
             ERRLOG("buffer not enough");
             return RET_WRONG;
@@ -184,7 +219,16 @@ ERR_CODE double_array_handler(void *dest, int dest_len, const void *src, int src
         str1 = strtok_r(NULL, ",", &str2);
     }
 
-    return RET_RIGHT;
+    if (num >= 0 && num == i)
+    {
+        *dest_size = num * (int)sizeof(char *);
+        return RET_RIGHT;
+    }
+    else
+    {
+        ERRLOG("format error!");
+        return RET_WRONG;
+    }
 
 }
 
